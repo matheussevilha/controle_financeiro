@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.vscode/
+storage.xlsx
+.env
+*.pyc
+.DS_Store
+instance/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
