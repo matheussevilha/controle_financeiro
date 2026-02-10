@@ -1,11 +1,11 @@
-from logging import info
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from openpyxl import Workbook, load_workbook
-from pathlib import Path
+import gspread
+from google.oauth2.service_account import Credentials
+import os
+import json
 
-app = FastAPI(title="Cost ManagementAPI")
-ARQUIVO = Path("storage.xlsx")
+app = FastAPI(title="Cost Management API")
 
 # --------- MODEL ----------
 class Gasto(BaseModel):
@@ -13,25 +13,38 @@ class Gasto(BaseModel):
     classificacao: str
     gasto: float
 
-# --------- HELPERS ----------
-def salvar_em_planilha(gasto: Gasto):
-    if not ARQUIVO.exists():
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Gastos"
-        ws.append(["Data", "Classificacao", "Gasto"])
-        wb.save(ARQUIVO)
-    wb = load_workbook(ARQUIVO)
-    ws = wb.active
+# --------- GOOGLE SHEETS CONFIG ----------
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
-    ws.append([gasto.data, gasto.classificacao, gasto.gasto])
-    wb.save(ARQUIVO)
+creds_json = os.getenv("GOOGLE_CREDENTIALS")
 
-# --------- ENDPOINTS ----------
+if not creds_json:
+    raise Exception("GOOGLE_CREDENTIALS not configured")
+
+creds_dict = json.loads(creds_json)
+
+credentials = Credentials.from_service_account_info(
+    creds_dict,
+    scopes=scope
+)
+
+client = gspread.authorize(credentials)
+
+SHEET_NAME = "Controle_Gastos"
+sheet = client.open(SHEET_NAME).sheet1
+
+# --------- ENDPOINT ----------
 @app.post("/webhook")
 def add_cost(info: Gasto):
     try:
-        salvar_em_planilha(info)
-        return {"message": "Cost item added successfully"}
+        sheet.append_row([
+            info.data,
+            info.classificacao,
+            info.gasto
+        ])
+        return {"message": "Cost item added to Google Sheets"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
