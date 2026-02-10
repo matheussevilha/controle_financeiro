@@ -33,8 +33,8 @@ credentials = Credentials.from_service_account_info(
 
 client = gspread.authorize(credentials)
 
-SHEET_NAME = "Controle_Gastos"
-sheet = client.open(SHEET_NAME).sheet1
+SHEET_ID = "1iiIpcrsHQ83HsOdE2ASt7paYBtRfVnIBz2uoNddQC80"
+sheet = client.open_by_key(SHEET_ID).sheet1
 
 # --------- ENDPOINT ----------
 @app.post("/webhook")
