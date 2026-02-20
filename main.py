@@ -34,7 +34,7 @@ credentials = Credentials.from_service_account_info(
 client = gspread.authorize(credentials)
 
 SHEET_ID = os.getenv("ID_DA_PLANILHA")
-sheet = client.open_by_key(SHEET_ID).sheet1
+sheet = client.open_by_key(SHEET_ID).worksheet("BalançoFinanceiro")
 
 # --------- ENDPOINT ----------
 @app.post("/webhook")
