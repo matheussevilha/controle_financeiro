@@ -1,44 +1,48 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import gspread
+import os
+import json
 import re
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 
 app = FastAPI()
 
-# -----------------------------
-# CONFIG GOOGLE SHEETS
-# -----------------------------
-
-SCOPES = [
+# --------- GOOGLE SHEETS CONFIG ----------
+scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = Credentials.from_service_account_file(
-    "credenciais.json",
-    scopes=SCOPES
+creds_json = os.getenv("GOOGLE_CREDENTIALS")
+
+if not creds_json:
+    raise Exception("GOOGLE_CREDENTIALS not configured")
+
+creds_dict = json.loads(creds_json)
+
+credentials = Credentials.from_service_account_info(
+    creds_dict,
+    scopes=scope
 )
 
-client = gspread.authorize(creds)
+client = gspread.authorize(credentials)
 
-# Nome da planilha
-sheet = client.open("ControleFinanceiro").worksheet("BalançoFinanceiro")
+SHEET_ID = os.getenv("ID_DA_PLANILHA")
+
+if not SHEET_ID:
+    raise Exception("ID_DA_PLANILHA not configured")
+
+sheet = client.open_by_key(SHEET_ID).worksheet("BalançoFinanceiro")
 
 
-# -----------------------------
-# MODELO RECEBIDO
-# -----------------------------
-
+# --------- MODELO ----------
 class Notificacao(BaseModel):
     notificacao: str
 
 
-# -----------------------------
-# WEBHOOK
-# -----------------------------
-
+# --------- WEBHOOK ----------
 @app.post("/webhook")
 def receber_notificacao(info: Notificacao):
 
@@ -49,9 +53,9 @@ def receber_notificacao(info: Notificacao):
     classificacao = None
     tipo_movimento = None  # entrada ou saida
 
-    # -----------------------------------
+    # -------------------------
     # COMPRA CRÉDITO
-    # -----------------------------------
+    # -------------------------
     if "Compra aprovada" in texto:
 
         classificacao = "Credito_ITAU"
@@ -66,9 +70,9 @@ def receber_notificacao(info: Notificacao):
         if data_match:
             data = data_match.group(1)
 
-    # -----------------------------------
+    # -------------------------
     # PIX ENVIADO
-    # -----------------------------------
+    # -------------------------
     elif "Você enviou" in texto:
 
         classificacao = "Pix_Enviado"
@@ -81,9 +85,9 @@ def receber_notificacao(info: Notificacao):
 
         data = datetime.today().strftime("%d/%m/%Y")
 
-    # -----------------------------------
+    # -------------------------
     # PIX RECEBIDO
-    # -----------------------------------
+    # -------------------------
     elif "Você recebeu" in texto:
 
         classificacao = "Pix_Recebido"
@@ -96,18 +100,18 @@ def receber_notificacao(info: Notificacao):
 
         data = datetime.today().strftime("%d/%m/%Y")
 
-    # -----------------------------------
+    # -------------------------
     # VALIDAÇÃO
-    # -----------------------------------
+    # -------------------------
     if not valor:
         raise HTTPException(status_code=400, detail="Valor não identificado")
 
     if not data:
         data = datetime.today().strftime("%d/%m/%Y")
 
-    # -----------------------------------
+    # -------------------------
     # ENVIO PARA PLANILHA
-    # -----------------------------------
+    # -------------------------
     sheet.append_row([
         data,
         classificacao,
