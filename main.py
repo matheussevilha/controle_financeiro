@@ -44,7 +44,7 @@ def add_cost(info: Gasto):
             info.data,
             info.classificacao,
             info.gasto
-        ])
+        ], table_range= "A1:C1000")
         return {"message": "Cost item added to Google Sheets"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
