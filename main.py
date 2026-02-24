@@ -58,7 +58,7 @@ def receber_notificacao(info: Notificacao):
     # -------------------------
     if "Compra aprovada" in texto:
 
-        classificacao = "Credito_ITAU"
+        classificacao = "Credito"
         tipo_movimento = "saida"
 
         valor_match = re.search(r"R\$ ?([0-9]+,[0-9]{2})", texto)
@@ -75,7 +75,7 @@ def receber_notificacao(info: Notificacao):
     # -------------------------
     elif "Você enviou" in texto:
 
-        classificacao = "Pix_Enviado"
+        classificacao = "Pix"
         tipo_movimento = "saida"
 
         valor_match = re.search(r"R\$ ?([0-9]+,[0-9]{2})", texto)
@@ -90,7 +90,7 @@ def receber_notificacao(info: Notificacao):
     # -------------------------
     elif "Você recebeu" in texto:
 
-        classificacao = "Pix_Recebido"
+        classificacao = "Pix"
         tipo_movimento = "entrada"
 
         valor_match = re.search(r"R\$ ?([0-9]+,[0-9]{2})", texto)
